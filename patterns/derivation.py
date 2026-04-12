@@ -46,7 +46,7 @@ class NixHash:
         if algorithm == NixHashAlgorithm.SHA512:
             h = hashlib.sha512(content.encode()).hexdigest()
         elif algorithm == NixHashAlgorithm.MD5:
-            h = hashlib.md5(content.encode()).hexdigest()  # noqa: S324
+            h = hashlib.md5(content.encode(), usedforsecurity=False).hexdigest()
         else:
             h = hashlib.sha256(content.encode()).hexdigest()
         return cls(algorithm=algorithm, value=h)
