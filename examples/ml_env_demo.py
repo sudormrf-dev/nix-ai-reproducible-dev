@@ -21,7 +21,6 @@ from patterns.environment import (
 from patterns.flake import FlakeInput, NixFlake, NixFlakeBuilder, SystemPlatform
 from patterns.lockfile import LockEntry, LockFile, LockFileValidator, hash_derivation
 
-
 # ---------------------------------------------------------------------------
 # Flake construction helpers
 # ---------------------------------------------------------------------------

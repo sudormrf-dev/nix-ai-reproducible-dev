@@ -14,7 +14,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from patterns.environment import AIEnvConfig, CudaVersion, build_ai_env
 from patterns.lockfile import hash_derivation
 
-
 # ---------------------------------------------------------------------------
 # Docker layer representation
 # ---------------------------------------------------------------------------

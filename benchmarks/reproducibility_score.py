@@ -35,11 +35,11 @@ class CriterionResult:
     name: str
     weight: int
     passed: bool
-    partial: float = 1.0  # 0.0–1.0 multiplier for partial credit
+    partial: float = 1.0  # 0.0-1.0 multiplier for partial credit
     note: str = ""
 
     def weighted_score(self) -> float:
-        """Contribution to the total score (0–weight)."""
+        """Contribution to the total score (0-weight)."""
         return self.weight * self.partial if self.passed else 0.0
 
 
@@ -52,11 +52,11 @@ class ApproachResult:
     build_times: list[float] = field(default_factory=list)  # simulated seconds
 
     def total_score(self) -> float:
-        """Sum of weighted criterion scores (0–100)."""
+        """Sum of weighted criterion scores (0-100)."""
         return sum(c.weighted_score() for c in self.criteria)
 
     def score_10(self) -> float:
-        """Normalise to 0–10 for display."""
+        """Normalise to 0-10 for display."""
         return round(self.total_score() / TOTAL_WEIGHT * 10, 1)
 
     def determinism_ratio(self) -> float:
@@ -82,7 +82,7 @@ class ApproachResult:
 # Simulated build determinism
 # ---------------------------------------------------------------------------
 
-_RAND = random.Random(42)  # fixed seed for reproducible simulation
+_RAND = random.Random(42)  # fixed seed for reproducible simulation  # noqa: S311
 
 
 def simulate_build_hashes(approach: str, runs: int = 5) -> list[float]:
