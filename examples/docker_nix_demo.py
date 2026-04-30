@@ -267,7 +267,8 @@ def verify_reproducibility(img: DockerImage) -> None:
     id_second = img.image_id()  # deterministic — always same
     match = id_first == id_second
     print(
-        f"\n[{img.build_mode}] Rebuild verification: {'PASS — bit-for-bit identical' if match else 'FAIL — drift detected'}"
+        f"\n[{img.build_mode}] Rebuild verification: "
+        f"{'PASS — bit-for-bit identical' if match else 'FAIL — drift detected'}"
     )
     print(f"  image_id = {id_first[:40]}...")
 
