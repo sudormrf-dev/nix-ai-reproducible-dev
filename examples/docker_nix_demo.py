@@ -11,7 +11,6 @@ from typing import Any
 # Allow running directly from the repo root without installing the package.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from patterns.derivation import BuildSystem, Derivation, NixHash, NixHashAlgorithm
 from patterns.environment import AIEnvConfig, CudaVersion, build_ai_env
 from patterns.lockfile import hash_derivation
 
@@ -19,6 +18,7 @@ from patterns.lockfile import hash_derivation
 # ---------------------------------------------------------------------------
 # Docker layer representation
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DockerLayer:
@@ -102,30 +102,38 @@ def build_traditional_image() -> DockerImage:
         base_digest=base_digest,
         build_mode="traditional",
     )
-    img.add_layer(DockerLayer(
-        digest=base_digest,
-        description="python:3.12-slim base (tag may move!)",
-        size_kb=45_000,
-        mutable=True,   # tag is not pinned to a digest
-    ))
-    img.add_layer(DockerLayer(
-        digest="sha256:" + hashlib.sha256(b"apt-get update 2024-05-01").hexdigest(),
-        description="apt-get update + gcc (date-dependent)",
-        size_kb=120_000,
-        mutable=True,
-    ))
-    img.add_layer(DockerLayer(
-        digest="sha256:" + hashlib.sha256(b"pip install torch 2.3.0").hexdigest(),
-        description="pip install torch+transformers+numpy",
-        size_kb=4_200_000,
-        mutable=True,   # PyPI metadata may change for same version
-    ))
-    img.add_layer(DockerLayer(
-        digest="sha256:" + hashlib.sha256(b"COPY app source").hexdigest(),
-        description="Application source COPY",
-        size_kb=500,
-        mutable=False,
-    ))
+    img.add_layer(
+        DockerLayer(
+            digest=base_digest,
+            description="python:3.12-slim base (tag may move!)",
+            size_kb=45_000,
+            mutable=True,  # tag is not pinned to a digest
+        )
+    )
+    img.add_layer(
+        DockerLayer(
+            digest="sha256:" + hashlib.sha256(b"apt-get update 2024-05-01").hexdigest(),
+            description="apt-get update + gcc (date-dependent)",
+            size_kb=120_000,
+            mutable=True,
+        )
+    )
+    img.add_layer(
+        DockerLayer(
+            digest="sha256:" + hashlib.sha256(b"pip install torch 2.3.0").hexdigest(),
+            description="pip install torch+transformers+numpy",
+            size_kb=4_200_000,
+            mutable=True,  # PyPI metadata may change for same version
+        )
+    )
+    img.add_layer(
+        DockerLayer(
+            digest="sha256:" + hashlib.sha256(b"COPY app source").hexdigest(),
+            description="Application source COPY",
+            size_kb=500,
+            mutable=False,
+        )
+    )
     return img
 
 
@@ -151,6 +159,7 @@ pkgs.dockerTools.buildLayeredImage {
 
 def build_nix_image(env: AIEnvConfig) -> DockerImage:
     """Simulate a Nix-built Docker image with content-addressed layers (Nix closure)."""
+
     # Each Nix layer digest is deterministic — derived from the closure hash
     def nix_layer_digest(pkg: str, version: str) -> str:
         store_hash = hash_derivation(pkg, version, [env.pinned_nixpkgs])
@@ -165,48 +174,61 @@ def build_nix_image(env: AIEnvConfig) -> DockerImage:
         build_mode="nix",
     )
     # Nix uses a scratch base + explicit closure layers
-    img.add_layer(DockerLayer(
-        digest="sha256:" + hashlib.sha256(b"scratch").hexdigest(),
-        description="scratch base (empty, no OS layer)",
-        size_kb=0,
-        mutable=False,
-    ))
-    img.add_layer(DockerLayer(
-        digest=nix_layer_digest("glibc", "2.38"),
-        description="glibc (pinned store path, content-addressed)",
-        size_kb=8_000,
-        mutable=False,
-    ))
-    img.add_layer(DockerLayer(
-        digest=nix_layer_digest("python312", "3.12.3"),
-        description="python3.12 (from Nix closure, bit-for-bit identical)",
-        size_kb=30_000,
-        mutable=False,
-    ))
-    img.add_layer(DockerLayer(
-        digest=nix_layer_digest("torch", "2.3.0"),
-        description="PyTorch 2.3.0 (Nix derivation, hash-pinned)",
-        size_kb=3_800_000,
-        mutable=False,
-    ))
-    img.add_layer(DockerLayer(
-        digest=nix_layer_digest("transformers", "4.40.0"),
-        description="transformers 4.40.0 (Nix derivation)",
-        size_kb=350_000,
-        mutable=False,
-    ))
-    img.add_layer(DockerLayer(
-        digest="sha256:" + hashlib.sha256(b"app source content").hexdigest(),
-        description="Application source (content-addressed by file hash)",
-        size_kb=500,
-        mutable=False,
-    ))
+    img.add_layer(
+        DockerLayer(
+            digest="sha256:" + hashlib.sha256(b"scratch").hexdigest(),
+            description="scratch base (empty, no OS layer)",
+            size_kb=0,
+            mutable=False,
+        )
+    )
+    img.add_layer(
+        DockerLayer(
+            digest=nix_layer_digest("glibc", "2.38"),
+            description="glibc (pinned store path, content-addressed)",
+            size_kb=8_000,
+            mutable=False,
+        )
+    )
+    img.add_layer(
+        DockerLayer(
+            digest=nix_layer_digest("python312", "3.12.3"),
+            description="python3.12 (from Nix closure, bit-for-bit identical)",
+            size_kb=30_000,
+            mutable=False,
+        )
+    )
+    img.add_layer(
+        DockerLayer(
+            digest=nix_layer_digest("torch", "2.3.0"),
+            description="PyTorch 2.3.0 (Nix derivation, hash-pinned)",
+            size_kb=3_800_000,
+            mutable=False,
+        )
+    )
+    img.add_layer(
+        DockerLayer(
+            digest=nix_layer_digest("transformers", "4.40.0"),
+            description="transformers 4.40.0 (Nix derivation)",
+            size_kb=350_000,
+            mutable=False,
+        )
+    )
+    img.add_layer(
+        DockerLayer(
+            digest="sha256:" + hashlib.sha256(b"app source content").hexdigest(),
+            description="Application source (content-addressed by file hash)",
+            size_kb=500,
+            mutable=False,
+        )
+    )
     return img
 
 
 # ---------------------------------------------------------------------------
 # Comparison and verification
 # ---------------------------------------------------------------------------
+
 
 def compare_images(trad: DockerImage, nix: DockerImage) -> None:
     """Print a side-by-side reproducibility comparison."""
@@ -215,13 +237,21 @@ def compare_images(trad: DockerImage, nix: DockerImage) -> None:
     print("-" * 72)
 
     rows: list[tuple[str, str, str]] = [
-        ("Build mode",         trad.build_mode,                nix.build_mode),
-        ("Layer count",        str(trad.layer_count()),         str(nix.layer_count())),
-        ("Total size (MB)",    f"{trad.total_size_kb()//1024}", f"{nix.total_size_kb()//1024}"),
-        ("Bit-for-bit repro",  str(trad.is_reproducible()),     str(nix.is_reproducible())),
-        ("Image ID stable",    "No (tag moves)",                "Yes (content hash)"),
-        ("Rollback possible",  "Manual / fragile",              "nix store paths are immutable"),
-        ("Cross-machine same", "No (pip, apt dates differ)",    "Yes (same closure = same ID)"),
+        ("Build mode", trad.build_mode, nix.build_mode),
+        ("Layer count", str(trad.layer_count()), str(nix.layer_count())),
+        (
+            "Total size (MB)",
+            f"{trad.total_size_kb() // 1024}",
+            f"{nix.total_size_kb() // 1024}",
+        ),
+        ("Bit-for-bit repro", str(trad.is_reproducible()), str(nix.is_reproducible())),
+        ("Image ID stable", "No (tag moves)", "Yes (content hash)"),
+        ("Rollback possible", "Manual / fragile", "nix store paths are immutable"),
+        (
+            "Cross-machine same",
+            "No (pip, apt dates differ)",
+            "Yes (same closure = same ID)",
+        ),
     ]
     for label, t_val, n_val in rows:
         print(f"{label:<30} {t_val:>20} {n_val:>20}")
@@ -234,9 +264,11 @@ def compare_images(trad: DockerImage, nix: DockerImage) -> None:
 def verify_reproducibility(img: DockerImage) -> None:
     """Build the image twice (simulated) and assert IDs match."""
     id_first = img.image_id()
-    id_second = img.image_id()   # deterministic — always same
+    id_second = img.image_id()  # deterministic — always same
     match = id_first == id_second
-    print(f"\n[{img.build_mode}] Rebuild verification: {'PASS — bit-for-bit identical' if match else 'FAIL — drift detected'}")
+    print(
+        f"\n[{img.build_mode}] Rebuild verification: {'PASS — bit-for-bit identical' if match else 'FAIL — drift detected'}"
+    )
     print(f"  image_id = {id_first[:40]}...")
 
 
@@ -244,17 +276,20 @@ def verify_reproducibility(img: DockerImage) -> None:
 # Main demo
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     """Run the Docker / Nix demo."""
     print("=" * 70)
     print("DOCKER + NIX HERMETIC IMAGE DEMO")
     print("=" * 70)
 
-    env = build_ai_env("ml-prod", ["torch", "transformers", "numpy"], CudaVersion.CUDA_12)
+    env = build_ai_env(
+        "ml-prod", ["torch", "transformers", "numpy"], CudaVersion.CUDA_12
+    )
     env.pinned_nixpkgs = "de60d24dc5ead7fb0c1bfa9be21b67e4fbc2c5db"
 
     trad_img = build_traditional_image()
-    nix_img  = build_nix_image(env)
+    nix_img = build_nix_image(env)
 
     print("\n--- Traditional Dockerfile ---")
     print(TRADITIONAL_DOCKERFILE)

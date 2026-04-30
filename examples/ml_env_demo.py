@@ -4,15 +4,21 @@ from __future__ import annotations
 
 import json
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 # Allow running directly from the repo root without installing the package.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from patterns.environment import AIEnvConfig, CudaVersion, EnvLayer, PythonEnvSpec, ReproducibilityReport, build_ai_env
-from patterns.flake import FlakeInput, FlakeOutput, FlakeOutputType, NixFlake, NixFlakeBuilder, SystemPlatform
+from patterns.environment import (
+    AIEnvConfig,
+    CudaVersion,
+    EnvLayer,
+    PythonEnvSpec,
+    ReproducibilityReport,
+    build_ai_env,
+)
+from patterns.flake import FlakeInput, NixFlake, NixFlakeBuilder, SystemPlatform
 from patterns.lockfile import LockEntry, LockFile, LockFileValidator, hash_derivation
 
 
@@ -67,7 +73,9 @@ def build_flake_utils_input() -> FlakeInput:
 def build_ml_flake() -> NixFlake:
     """Build a NixFlake for a multi-Python ML project."""
     builder = (
-        NixFlakeBuilder("Hermetic ML environment: Python + PyTorch + CUDA (multi-version)")
+        NixFlakeBuilder(
+            "Hermetic ML environment: Python + PyTorch + CUDA (multi-version)"
+        )
         .systems(SystemPlatform.X86_64_LINUX, SystemPlatform.AARCH64_LINUX)
         .input("nixpkgs", NIXPKGS_URL)
         .input("flake-utils", FLAKE_UTILS_URL)
@@ -87,6 +95,7 @@ def build_ml_flake() -> NixFlake:
 # ---------------------------------------------------------------------------
 # Per-Python-version environment specs
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class VersionedEnv:
@@ -110,7 +119,13 @@ def build_versioned_envs() -> list[VersionedEnv]:
             name=f"ml-dev-py{py_ver.replace('.', '')}",
             python_spec=spec,
             cuda=CudaVersion.CUDA_12,
-            layers=[EnvLayer.BASE, EnvLayer.PYTHON, EnvLayer.CUDA, EnvLayer.ML_FRAMEWORK, EnvLayer.DEV_TOOLS],
+            layers=[
+                EnvLayer.BASE,
+                EnvLayer.PYTHON,
+                EnvLayer.CUDA,
+                EnvLayer.ML_FRAMEWORK,
+                EnvLayer.DEV_TOOLS,
+            ],
             system_packages=["gcc", "stdenv.cc.cc.lib", "zlib", "libGL"],
             env_vars={
                 "CUDA_HOME": "/run/current-system/sw",
@@ -137,27 +152,32 @@ def build_ci_env() -> AIEnvConfig:
 # Lock file generation
 # ---------------------------------------------------------------------------
 
+
 def build_lock_file() -> LockFile:
     """Simulate a flake.lock with pinned revisions and NAR hashes."""
     lock = LockFile(version=7)
 
     nixpkgs_nar = hash_derivation("nixpkgs", NIXPKGS_REV, [])
-    lock.add(LockEntry(
-        name="nixpkgs",
-        url=NIXPKGS_URL,
-        rev=NIXPKGS_REV,
-        nar_hash=f"sha256-{nixpkgs_nar}",
-        last_modified=1_700_000_000,
-    ))
+    lock.add(
+        LockEntry(
+            name="nixpkgs",
+            url=NIXPKGS_URL,
+            rev=NIXPKGS_REV,
+            nar_hash=f"sha256-{nixpkgs_nar}",
+            last_modified=1_700_000_000,
+        )
+    )
 
     utils_nar = hash_derivation("flake-utils", FLAKE_UTILS_REV, ["nixpkgs"])
-    lock.add(LockEntry(
-        name="flake-utils",
-        url=FLAKE_UTILS_URL,
-        rev=FLAKE_UTILS_REV,
-        nar_hash=f"sha256-{utils_nar}",
-        last_modified=1_699_000_000,
-    ))
+    lock.add(
+        LockEntry(
+            name="flake-utils",
+            url=FLAKE_UTILS_URL,
+            rev=FLAKE_UTILS_REV,
+            nar_hash=f"sha256-{utils_nar}",
+            last_modified=1_699_000_000,
+        )
+    )
 
     return lock
 
@@ -165,6 +185,7 @@ def build_lock_file() -> LockFile:
 # ---------------------------------------------------------------------------
 # Nix file content generators
 # ---------------------------------------------------------------------------
+
 
 def render_flake_nix(flake: NixFlake, envs: list[VersionedEnv]) -> str:
     """Render a flake.nix string for the ML project."""
@@ -213,9 +234,10 @@ def render_flake_lock(lock: LockFile) -> str:
 # Reproducibility validation
 # ---------------------------------------------------------------------------
 
+
 def validate_env(cfg: AIEnvConfig, lock: LockFile) -> ReproducibilityReport:
     """Assess reproducibility of an AIEnvConfig against the lock file."""
-    required = [i.name for i in [FlakeInput("nixpkgs", ""), FlakeInput("flake-utils", "")]]
+    [i.name for i in [FlakeInput("nixpkgs", ""), FlakeInput("flake-utils", "")]]
     validator = LockFileValidator(lock)
     issues = validator.validate(["nixpkgs", "flake-utils"])
 
@@ -238,6 +260,7 @@ def validate_env(cfg: AIEnvConfig, lock: LockFile) -> ReproducibilityReport:
 # Main demo
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     """Run the ML environment demo and print a full report."""
     print("=" * 70)
@@ -252,8 +275,12 @@ def main() -> None:
     ci_env = build_ci_env()
 
     print(f"\nFlake: {flake.description}")
-    print(f"  Inputs  : {flake.input_count()} ({', '.join(i.name for i in flake.inputs)})")
-    print(f"  Outputs : {flake.output_count()} ({', '.join(o.name for o in flake.outputs)})")
+    print(
+        f"  Inputs  : {flake.input_count()} ({', '.join(i.name for i in flake.inputs)})"
+    )
+    print(
+        f"  Outputs : {flake.output_count()} ({', '.join(o.name for o in flake.outputs)})"
+    )
     print(f"  Systems : {', '.join(s.value for s in flake.supported_systems)}")
     print(f"  Has devShell: {flake.has_dev_shell()}")
 
